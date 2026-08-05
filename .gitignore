@@ -1,0 +1,10 @@
+.env
+.DS_Store
+*.log
+backend/studytrack-api
+backend/server.exe
+frontend/node_modules
+frontend/dist
+frontend/*.tsbuildinfo
+.vscode
+.idea

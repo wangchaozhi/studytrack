@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing v-prefixed tag to release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Validate release version
+        shell: bash
+        run: |
+          expected="v$(node -p "require('./frontend/package.json').version")"
+          test "$RELEASE_TAG" = "$expected" || { echo "Tag $RELEASE_TAG must match package version $expected"; exit 1; }
+      - name: Test backend
+        working-directory: backend
+        run: go test ./...
+      - name: Build frontend
+        working-directory: frontend
+        run: npm ci && npm audit --omit=dev --audit-level=high && npm run lint && npm run build
+      - name: Build Docker images
+        run: docker compose build
+      - name: Run MVP integration smoke test
+        shell: bash
+        run: |
+          docker compose up -d
+          trap 'docker compose down -v' EXIT
+          for _ in {1..30}; do
+            curl -fsS http://localhost:8080/healthz && break
+            sleep 2
+          done
+          bash scripts/smoke.sh
+      - name: Build release artifacts
+        shell: bash
+        run: |
+          mkdir -p release
+          cd backend
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../release/studytrack-api-linux-amd64 ./cmd/server
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../release/studytrack-api-darwin-amd64 ./cmd/server
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ../release/studytrack-api-darwin-arm64 ./cmd/server
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../release/studytrack-api-windows-amd64.exe ./cmd/server
+          cd ..
+          tar -czf "release/studytrack-web-${RELEASE_TAG}.tar.gz" -C frontend/dist .
+          cd release
+          sha256sum ./* > SHA256SUMS
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: gh release create "$RELEASE_TAG" release/* --verify-tag --generate-notes --title "StudyTrack $RELEASE_TAG"

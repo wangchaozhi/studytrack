@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Test backend
+        working-directory: backend
+        run: go test ./...
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Audit production dependencies
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+      - name: Type-check frontend
+        working-directory: frontend
+        run: npm run lint
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Build Docker images
+        run: docker compose build
+      - name: Run MVP integration smoke test
+        shell: bash
+        run: |
+          docker compose up -d
+          trap 'docker compose down -v' EXIT
+          for _ in {1..30}; do
+            curl -fsS http://localhost:8080/healthz && break
+            sleep 2
+          done
+          bash scripts/smoke.sh
