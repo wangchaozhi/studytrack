@@ -41,6 +41,22 @@
 
 需要安装 Docker 与 Docker Compose。
 
+Windows PowerShell：
+
+```powershell
+.\scripts\start.ps1
+```
+
+macOS / Linux：
+
+```bash
+bash ./scripts/start.sh
+```
+
+脚本会在首次启动时根据 `.env.example` 创建 `.env`、生成随机 JWT 密钥、构建容器，并等待 Web 与 API 健康检查通过。如果镜像已经构建，可以分别使用 `-NoBuild` 或 `--no-build` 快速启动。
+
+也可以直接执行：
+
 ```bash
 cp .env.example .env
 docker compose up --build

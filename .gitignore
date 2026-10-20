@@ -8,3 +8,4 @@ frontend/dist
 frontend/*.tsbuildinfo
 .vscode
 .idea
+backend/coverage
