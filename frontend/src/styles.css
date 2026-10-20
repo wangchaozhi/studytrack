@@ -130,6 +130,7 @@ label small { color: var(--muted); font-weight: 400; }
 
 .mini-bars { height: 190px; display: flex; align-items: flex-end; gap: 6px; padding-top: 15px; }
 .bar-item { height: 100%; flex: 1; min-width: 7px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 7px; }
+.bar-track { flex: 1; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
 .bar { width: 70%; max-width: 22px; min-height: 5px; background: linear-gradient(180deg,#766df0,#4f46e5); border-radius: 5px 5px 2px 2px; transition: .2s; }
 .bar-item:hover .bar { opacity: .75; transform: translateY(-2px); }
 .bar-item small { font-size: 8px; color: #929aab; }

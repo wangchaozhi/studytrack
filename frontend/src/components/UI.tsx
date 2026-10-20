@@ -33,7 +33,7 @@ export function Modal({ title, children, onClose }: { title: string; children: R
 
 export function MiniBars({ data }: { data: { date: string; value: number }[] }) {
   const max = Math.max(...data.map((x) => x.value), 1)
-  return <div className="mini-bars">{data.map((x) => <div className="bar-item" key={x.date} title={`${x.date}: ${x.value}`}><div className="bar" style={{ height: `${Math.max(5, x.value / max * 100)}%` }} /><small>{x.date.slice(-2)}</small></div>)}</div>
+  return <div className="mini-bars">{data.map((x) => <div className="bar-item" key={x.date} title={`${x.date}: ${x.value}`}><div className="bar-track"><div className="bar" style={{ height: `${Math.max(5, x.value / max * 100)}%` }} /></div><small>{x.date.slice(-2)}</small></div>)}</div>
 }
 
 export const goalTypeLabel: Record<string, string> = { degree: '学位复习', postgraduate: '考研', ielts: '雅思' }
